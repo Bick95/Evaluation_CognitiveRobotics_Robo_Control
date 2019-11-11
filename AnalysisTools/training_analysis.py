@@ -192,6 +192,50 @@ def save_data_package_to_file(direct, name, data_arr):
 
 
 def evaluate_measurements_per_param_specification(path, params):
+    """
+        First, over a given number of an agent's weight updates, the number of successful grasps is recorded via the
+        callback function. Particularly, after 10 weight updates have been performed, the number of total grasps
+        performed over the last 10 weight updates, where each weight update is executed after 128 simulated time steps
+        have been executed, is saved to file for a given trained model.
+        Similarly, the number of time steps it took the robotic arm to perform a successful grasp is recorded for each
+        successful grasp over the given period of 10 weight updates.
+        After that period, i.e. once 10 weight updates have been performed, the callback function not only saves the
+        total number of grasps performed during the last 10 weight updates, but also the mean number of time steps it
+        took the model to perform these grasps, where the mean number of time steps is computed as the mean over all the
+        numbers of time steps recorded over the last 10 weight updates.
+        Additionally, also the standard deviation corresponding to the mean number of time steps it took the model to
+        perform a successful grasp is computed as the standard deviation over all the numbers of time steps recorded
+        over the last 10 weight updates. This also gets saved to file.
+        All these information get saved row-wise to a file called training_eval.csv, which is included in a models's
+        respective folder.
+
+        Afterwards, this function collects the training_eval.csv files from all the models trained given a certain
+        parameter-setting and creates summarizing files. Most importantly, the following files get created:
+            1. MeansOverGrasps.csv: This file contains the mean number of grasps achieved across all 5 models within 10
+            weight updates trained on a specific parameter setting as a function of the number of performed weight
+            updates. The mean number of grasps computed over the 5 models per parameter setting as a function of weight
+            updates is provided as a function of the performed weight updates.
+            2. StdOverGrasps.csv: Contains for each parameter-setting as a function of performed weight updates the
+            standard deviation corresponding to the mean number of grasps achieved over 10 weight updates across all the
+            models belonging to a given parameter-setting.
+            3. MeanOverMeanGraspingTimes.csv: Given the mean grasp times it took a model to perform a successful grasp
+            (computed over 10 weight updates of the model) as a function of the number of performed weight updates, this
+            file contains for each parameter-setting the mean number of time steps it took to perform a successful grasp
+            per parameter-setting, computed over all models trained on a given parameter setting. The result is, again,
+            a function of performed weight updates.
+            4. MeanOverStdOfGraspingTimes.csv: Given the standard deviation corresponding to the mean grasp times it
+            took a model to perform a successful grasp as a function of the number of performed weight updates, this
+            file contains for each parameter-setting as a function of performed weight updated the mean standard
+            deviation per parameter-setting computed over all the respective standard deviations of all models trained
+            on a given parameter setting.
+
+    :param path: Path to where saved models are located.
+    :param params: Dictionary; Key: parameter-setting-id; Value: list of model names belonging to models trained given a
+    certain parameter setting specified by the parameter-setting-id encoded in a list's respective key.
+    :return: -
+    """
+
+
     print('PARAMS----')
     print(params)
     rows_assigned = False
