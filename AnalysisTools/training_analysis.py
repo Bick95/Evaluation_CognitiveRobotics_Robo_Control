@@ -259,21 +259,23 @@ def evaluate_measurements_per_param_specification(path, params):
         header_summary_grasping_t_m_m.append(key.replace('ParameterSettings/', '').replace('.json', ''))
         header_summary_grasping_t_s_m.append(key.replace('ParameterSettings/', '').replace('.json', ''))
 
-        # Collect data given key's param setting from all files that made use of that param setting
+        # Collect data from all files that made use of that param setting defined by the given key
         for file_name in params[key]:
             header_graspings.append(file_name)
             eval_file_name = path + file_name + '/training_eval.csv'
             with open(eval_file_name, 'r') as dest_f:
+                # Read in a model's 'private' training log file
                 data_iter = csv.reader(dest_f,
                                        quotechar='"',
                                        dialect='excel',
                                        quoting=csv.QUOTE_ALL)
-                data = [data for data in data_iter]
-            data_array = np.asarray(data)
+                data = [data for data in data_iter]     # Concatenate rows...
+            data_array = np.asarray(data)               # ... and transform them to array
 
-            cropped = data_array[1:, :]
-            cropped = cropped.astype(np.float)
+            cropped = data_array[1:, :]             # Remove header-row
+            cropped = cropped.astype(np.float)      # By default, floats are read in as strings from file. Convert back.
 
+            # In summary file: first column contains the number of performed weight-updates row-wise...
             if not rows_assigned:
                 summary_grasping_means = [cropped[:, 0]]
                 summary_grasping_stds = [cropped[:, 0]]
@@ -281,9 +283,14 @@ def evaluate_measurements_per_param_specification(path, params):
                 summary_grasping_time_std_means = [cropped[:, 0]]
                 rows_assigned = True
 
-            grasps = cropped[:, 1]
-            avg_time = cropped[:, 2]
-            std_time = cropped[:, 3]
+            # From model's 'personal' file: read in the
+            #   - total number of grasps obtained over every 10 weight updates,
+            #   - the mean time needed to get into grasping pose over last 10 weight updates,
+            #   - the std corresponding to the mean time needed to get into grasping pose over last 10 weight updates,
+            # respectively.
+            grasps = cropped[:, 1]   # Grasps achieved by a read-in model over every 10 last weight updates
+            avg_time = cropped[:, 2] # Avg time it took a model over every 10 last weight updates to get into grasp pose
+            std_time = cropped[:, 3] # Std corresponding to mean/average time for every 10 weight updates above.
 
             if init:
                 combined_measurements_grasps = [grasps]     # Grasp counts combined over all files created given
@@ -296,16 +303,19 @@ def evaluate_measurements_per_param_specification(path, params):
                 combined_measurements_avg.append(avg_time)
                 combined_measurements_std.append(std_time)
 
-        # Data collected from all files.
+        # Log data collected from all models trained on a given parameter setting specified by key.
 
-        # Analyze
+        # Analyze data
         # # Graspings...
+        # combined_grasps_arr contains the total number of grasps obtained for each individual model over every last 10
+        # weight updates (listed row-wise) for all models trained on a given parameter-setting specified by key (listed
+        # column-wise)
         combined_grasps_arr = np.array(combined_measurements_grasps).transpose()
 
         try:
-            combined_grasps_mean_arr = np.array([np.nanmean(combined_grasps_arr, axis=1)])
+            combined_grasps_mean_arr = np.array([np.nanmean(combined_grasps_arr, axis=1)])  # mean computed row-wise
         except RuntimeWarning:
-            pass
+            pass  # Attempt to suppress printing of these warnings
         combined_grasps_stds_arr = np.array([np.nanstd(combined_grasps_arr, axis=1)])
 
         header_mean_times_mean = header_graspings.copy()
